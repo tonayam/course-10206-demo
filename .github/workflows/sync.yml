@@ -1,0 +1,66 @@
+---
+# GitOps sync workflow for Course 10206 demo.
+#
+# Acts as a lightweight GitOps controller for environments where
+# ArgoCD cannot be installed (e.g. the Red Hat Developer Sandbox).
+#
+# Triggered by:
+#   - Any push to main that changes a file under manifests/
+#   - Manual run via the GitHub Actions UI (workflow_dispatch)
+#
+# What it does:
+#   1. Checks out the repo
+#   2. Installs the OpenShift CLI (oc)
+#   3. Logs into the sandbox cluster using stored secrets
+#   4. Applies every manifest in manifests/ to the target namespace
+#
+# Required secrets (set in the GitHub repo: Settings → Secrets and variables → Actions):
+#   OCP_TOKEN   — the sha256~... token from `oc whoami -t`
+#   OCP_SERVER  — the API URL, e.g. https://api.rm2.thpm.p1.openshiftapps.com:6443
+#   OCP_NAMESPACE — your project name, e.g. tonayam-dev
+
+name: GitOps Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'manifests/**'
+      - '.github/workflows/sync.yml'
+  workflow_dispatch:  # allow manual triggering for the demo
+
+jobs:
+  sync:
+    name: Apply manifests to OpenShift
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install OpenShift CLI
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: latest
+
+      - name: Log in to OpenShift
+        run: |
+          oc login \
+            --token=${{ secrets.OCP_TOKEN }} \
+            --server=${{ secrets.OCP_SERVER }} \
+            --insecure-skip-tls-verify=true
+          echo "Logged in as $(oc whoami)"
+
+      - name: Apply manifests (declarative reconcile)
+        run: |
+          echo "Applying every manifest in ./manifests to namespace ${{ secrets.OCP_NAMESPACE }}"
+          oc apply -f manifests/ -n ${{ secrets.OCP_NAMESPACE }}
+
+      - name: Show resulting cluster state
+        run: |
+          echo "--- Deployments ---"
+          oc get deployment -n ${{ secrets.OCP_NAMESPACE }}
+          echo "--- Pods ---"
+          oc get pods -n ${{ secrets.OCP_NAMESPACE }}
+          echo "--- Routes ---"
+          oc get route -n ${{ secrets.OCP_NAMESPACE }}
