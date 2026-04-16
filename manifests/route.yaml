@@ -1,0 +1,16 @@
+---
+# Route — OpenShift-specific resource that publishes the Service
+# to a public URL with TLS terminated at the cluster edge.
+
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: inventory-api
+spec:
+  to:
+    kind: Service
+    name: inventory-api
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge

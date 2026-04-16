@@ -1,0 +1,36 @@
+---
+# Deployment manifest — managed by GitOps from here on.
+#
+# Any change made to this file (e.g. replicas: 2 → 3, image tag bump)
+# and pushed to Git will be picked up by ArgoCD and reconciled into
+# the cluster within seconds. No kubectl, no manual oc apply.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-api
+  labels:
+    app: inventory-api
+    managed-by: gitops
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: inventory-api
+  template:
+    metadata:
+      labels:
+        app: inventory-api
+    spec:
+      containers:
+        - name: inventory-api
+          image: registry.access.redhat.com/ubi8/httpd-24:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

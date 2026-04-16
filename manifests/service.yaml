@@ -1,0 +1,14 @@
+---
+# Service — internal load balancing for the Deployment above.
+# Cluster-local: pods talk to this, the outside world does not.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-api
+spec:
+  selector:
+    app: inventory-api
+  ports:
+    - port: 80
+      targetPort: 8080
